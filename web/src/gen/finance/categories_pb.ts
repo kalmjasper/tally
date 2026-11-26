@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file finance/categories.proto.
  */
 export const file_finance_categories: GenFile = /*@__PURE__*/
-  fileDesc("ChhmaW5hbmNlL2NhdGVnb3JpZXMucHJvdG8SB2ZpbmFuY2UibwoIQ2F0ZWdvcnkSCgoCaWQYASABKAMSFgoJcGFyZW50X2lkGAIgASgDSACIAQESDAoEbmFtZRgDIAEoCRIjCgRraW5kGAQgASgOMhUuZmluYW5jZS5DYXRlZ29yeUtpbmRCDAoKX3BhcmVudF9pZCIXChVMaXN0Q2F0ZWdvcmllc1JlcXVlc3QiPwoWTGlzdENhdGVnb3JpZXNSZXNwb25zZRIlCgpjYXRlZ29yaWVzGAEgAygLMhEuZmluYW5jZS5DYXRlZ29yeSJwChVDcmVhdGVDYXRlZ29yeVJlcXVlc3QSFgoJcGFyZW50X2lkGAEgASgDSACIAQESDAoEbmFtZRgCIAEoCRIjCgRraW5kGAMgASgOMhUuZmluYW5jZS5DYXRlZ29yeUtpbmRCDAoKX3BhcmVudF9pZCI9ChZDcmVhdGVDYXRlZ29yeVJlc3BvbnNlEiMKCGNhdGVnb3J5GAEgASgLMhEuZmluYW5jZS5DYXRlZ29yeSJXChVVcGRhdGVDYXRlZ29yeVJlcXVlc3QSCgoCaWQYASABKAMSDAoEbmFtZRgCIAEoCRIWCglwYXJlbnRfaWQYAyABKANIAIgBAUIMCgpfcGFyZW50X2lkIj0KFlVwZGF0ZUNhdGVnb3J5UmVzcG9uc2USIwoIY2F0ZWdvcnkYASABKAsyES5maW5hbmNlLkNhdGVnb3J5IiMKFURlbGV0ZUNhdGVnb3J5UmVxdWVzdBIKCgJpZBgBIAEoAyIYChZEZWxldGVDYXRlZ29yeVJlc3BvbnNlKmIKDENhdGVnb3J5S2luZBIdChlDQVRFR09SWV9LSU5EX1VOU1BFQ0lGSUVEEAASGQoVQ0FURUdPUllfS0lORF9FWFBFTlNFEAESGAoUQ0FURUdPUllfS0lORF9JTkNPTUUQAjLdAgoPQ2F0ZWdvcnlTZXJ2aWNlElEKDkxpc3RDYXRlZ29yaWVzEh4uZmluYW5jZS5MaXN0Q2F0ZWdvcmllc1JlcXVlc3QaHy5maW5hbmNlLkxpc3RDYXRlZ29yaWVzUmVzcG9uc2USUQoOQ3JlYXRlQ2F0ZWdvcnkSHi5maW5hbmNlLkNyZWF0ZUNhdGVnb3J5UmVxdWVzdBofLmZpbmFuY2UuQ3JlYXRlQ2F0ZWdvcnlSZXNwb25zZRJRCg5VcGRhdGVDYXRlZ29yeRIeLmZpbmFuY2UuVXBkYXRlQ2F0ZWdvcnlSZXF1ZXN0Gh8uZmluYW5jZS5VcGRhdGVDYXRlZ29yeVJlc3BvbnNlElEKDkRlbGV0ZUNhdGVnb3J5Eh4uZmluYW5jZS5EZWxldGVDYXRlZ29yeVJlcXVlc3QaHy5maW5hbmNlLkRlbGV0ZUNhdGVnb3J5UmVzcG9uc2ViBnByb3RvMw");
+  fileDesc("ChhmaW5hbmNlL2NhdGVnb3JpZXMucHJvdG8SB2ZpbmFuY2UikwEKCENhdGVnb3J5EgoKAmlkGAEgASgDEhYKCXBhcmVudF9pZBgCIAEoA0gAiAEBEgwKBG5hbWUYAyABKAkSIwoEa2luZBgEIAEoDjIVLmZpbmFuY2UuQ2F0ZWdvcnlLaW5kEg0KBWZpeGVkGAUgASgIEhMKC3llYXJseV9jb3N0GAYgASgIQgwKCl9wYXJlbnRfaWQiFwoVTGlzdENhdGVnb3JpZXNSZXF1ZXN0Ij8KFkxpc3RDYXRlZ29yaWVzUmVzcG9uc2USJQoKY2F0ZWdvcmllcxgBIAMoCzIRLmZpbmFuY2UuQ2F0ZWdvcnkilAEKFUNyZWF0ZUNhdGVnb3J5UmVxdWVzdBIWCglwYXJlbnRfaWQYASABKANIAIgBARIMCgRuYW1lGAIgASgJEiMKBGtpbmQYAyABKA4yFS5maW5hbmNlLkNhdGVnb3J5S2luZBINCgVmaXhlZBgEIAEoCBITCgt5ZWFybHlfY29zdBgFIAEoCEIMCgpfcGFyZW50X2lkIj0KFkNyZWF0ZUNhdGVnb3J5UmVzcG9uc2USIwoIY2F0ZWdvcnkYASABKAsyES5maW5hbmNlLkNhdGVnb3J5IlcKFVVwZGF0ZUNhdGVnb3J5UmVxdWVzdBIKCgJpZBgBIAEoAxIMCgRuYW1lGAIgASgJEhYKCXBhcmVudF9pZBgDIAEoA0gAiAEBQgwKCl9wYXJlbnRfaWQiPQoWVXBkYXRlQ2F0ZWdvcnlSZXNwb25zZRIjCghjYXRlZ29yeRgBIAEoCzIRLmZpbmFuY2UuQ2F0ZWdvcnkiSAoWU2V0Q2F0ZWdvcnlUYWdzUmVxdWVzdBIKCgJpZBgBIAEoAxINCgVmaXhlZBgCIAEoCBITCgt5ZWFybHlfY29zdBgDIAEoCCI+ChdTZXRDYXRlZ29yeVRhZ3NSZXNwb25zZRIjCghjYXRlZ29yeRgBIAEoCzIRLmZpbmFuY2UuQ2F0ZWdvcnkiIwoVRGVsZXRlQ2F0ZWdvcnlSZXF1ZXN0EgoKAmlkGAEgASgDIhgKFkRlbGV0ZUNhdGVnb3J5UmVzcG9uc2UqYgoMQ2F0ZWdvcnlLaW5kEh0KGUNBVEVHT1JZX0tJTkRfVU5TUEVDSUZJRUQQABIZChVDQVRFR09SWV9LSU5EX0VYUEVOU0UQARIYChRDQVRFR09SWV9LSU5EX0lOQ09NRRACMrMDCg9DYXRlZ29yeVNlcnZpY2USUQoOTGlzdENhdGVnb3JpZXMSHi5maW5hbmNlLkxpc3RDYXRlZ29yaWVzUmVxdWVzdBofLmZpbmFuY2UuTGlzdENhdGVnb3JpZXNSZXNwb25zZRJRCg5DcmVhdGVDYXRlZ29yeRIeLmZpbmFuY2UuQ3JlYXRlQ2F0ZWdvcnlSZXF1ZXN0Gh8uZmluYW5jZS5DcmVhdGVDYXRlZ29yeVJlc3BvbnNlElEKDlVwZGF0ZUNhdGVnb3J5Eh4uZmluYW5jZS5VcGRhdGVDYXRlZ29yeVJlcXVlc3QaHy5maW5hbmNlLlVwZGF0ZUNhdGVnb3J5UmVzcG9uc2USVAoPU2V0Q2F0ZWdvcnlUYWdzEh8uZmluYW5jZS5TZXRDYXRlZ29yeVRhZ3NSZXF1ZXN0GiAuZmluYW5jZS5TZXRDYXRlZ29yeVRhZ3NSZXNwb25zZRJRCg5EZWxldGVDYXRlZ29yeRIeLmZpbmFuY2UuRGVsZXRlQ2F0ZWdvcnlSZXF1ZXN0Gh8uZmluYW5jZS5EZWxldGVDYXRlZ29yeVJlc3BvbnNlYgZwcm90bzM");
 
 /**
  * @generated from message finance.Category
@@ -35,6 +35,16 @@ export type Category = Message<"finance.Category"> & {
    * @generated from field: finance.CategoryKind kind = 4;
    */
   kind: CategoryKind;
+
+  /**
+   * @generated from field: bool fixed = 5;
+   */
+  fixed: boolean;
+
+  /**
+   * @generated from field: bool yearly_cost = 6;
+   */
+  yearlyCost: boolean;
 };
 
 /**
@@ -92,6 +102,16 @@ export type CreateCategoryRequest = Message<"finance.CreateCategoryRequest"> & {
    * @generated from field: finance.CategoryKind kind = 3;
    */
   kind: CategoryKind;
+
+  /**
+   * @generated from field: bool fixed = 4;
+   */
+  fixed: boolean;
+
+  /**
+   * @generated from field: bool yearly_cost = 5;
+   */
+  yearlyCost: boolean;
 };
 
 /**
@@ -163,6 +183,50 @@ export const UpdateCategoryResponseSchema: GenMessage<UpdateCategoryResponse> = 
   messageDesc(file_finance_categories, 6);
 
 /**
+ * @generated from message finance.SetCategoryTagsRequest
+ */
+export type SetCategoryTagsRequest = Message<"finance.SetCategoryTagsRequest"> & {
+  /**
+   * @generated from field: int64 id = 1;
+   */
+  id: bigint;
+
+  /**
+   * @generated from field: bool fixed = 2;
+   */
+  fixed: boolean;
+
+  /**
+   * @generated from field: bool yearly_cost = 3;
+   */
+  yearlyCost: boolean;
+};
+
+/**
+ * Describes the message finance.SetCategoryTagsRequest.
+ * Use `create(SetCategoryTagsRequestSchema)` to create a new message.
+ */
+export const SetCategoryTagsRequestSchema: GenMessage<SetCategoryTagsRequest> = /*@__PURE__*/
+  messageDesc(file_finance_categories, 7);
+
+/**
+ * @generated from message finance.SetCategoryTagsResponse
+ */
+export type SetCategoryTagsResponse = Message<"finance.SetCategoryTagsResponse"> & {
+  /**
+   * @generated from field: finance.Category category = 1;
+   */
+  category?: Category | undefined;
+};
+
+/**
+ * Describes the message finance.SetCategoryTagsResponse.
+ * Use `create(SetCategoryTagsResponseSchema)` to create a new message.
+ */
+export const SetCategoryTagsResponseSchema: GenMessage<SetCategoryTagsResponse> = /*@__PURE__*/
+  messageDesc(file_finance_categories, 8);
+
+/**
  * @generated from message finance.DeleteCategoryRequest
  */
 export type DeleteCategoryRequest = Message<"finance.DeleteCategoryRequest"> & {
@@ -177,7 +241,7 @@ export type DeleteCategoryRequest = Message<"finance.DeleteCategoryRequest"> & {
  * Use `create(DeleteCategoryRequestSchema)` to create a new message.
  */
 export const DeleteCategoryRequestSchema: GenMessage<DeleteCategoryRequest> = /*@__PURE__*/
-  messageDesc(file_finance_categories, 7);
+  messageDesc(file_finance_categories, 9);
 
 /**
  * @generated from message finance.DeleteCategoryResponse
@@ -190,7 +254,7 @@ export type DeleteCategoryResponse = Message<"finance.DeleteCategoryResponse"> &
  * Use `create(DeleteCategoryResponseSchema)` to create a new message.
  */
 export const DeleteCategoryResponseSchema: GenMessage<DeleteCategoryResponse> = /*@__PURE__*/
-  messageDesc(file_finance_categories, 8);
+  messageDesc(file_finance_categories, 10);
 
 /**
  * @generated from enum finance.CategoryKind
@@ -251,6 +315,16 @@ export const CategoryService: GenService<{
     methodKind: "unary";
     input: typeof UpdateCategoryRequestSchema;
     output: typeof UpdateCategoryResponseSchema;
+  },
+  /**
+   * Set two independent tags on an expense category.
+   *
+   * @generated from rpc finance.CategoryService.SetCategoryTags
+   */
+  setCategoryTags: {
+    methodKind: "unary";
+    input: typeof SetCategoryTagsRequestSchema;
+    output: typeof SetCategoryTagsResponseSchema;
   },
   /**
    * Refused while the category has subcategories or splits.

@@ -1,14 +1,17 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 
 import { isUncategorized, type CatIndex } from "../lib/categories";
 import { addMonths, currentMonth, euros, money, monthLabel, monthRange, MONTHS_SHORT } from "../lib/format";
-import { monthModel, monthsCovered, spendDelta, subcategorySeries, transferBreakdown, yearModel, type CategoryRow, type Series } from "../lib/overview";
+import { costFilterTotals, monthModel, monthlyAverage, monthsCovered, spendDelta, spendingShares, subcategorySeries, transferBreakdown, withoutFixed, yearChartCosts, yearModel, type CategoryRow, type CostFilter, type Series } from "../lib/overview";
 import { useSheets } from "../sheets/context";
 import { useAccountRoles, useCats, useTotals, useTransactions } from "../queries";
 import { CategoryIcon, Empty, Segmented, Stepper } from "../ui/controls";
 import { Icon } from "../ui/Icon";
+import { SharesCard } from "../ui/SharesCard";
 import { YearChart } from "./YearChart";
+
+const averageShare = new Intl.NumberFormat("nl-NL", { style: "percent", maximumFractionDigits: 1 });
 
 export function Overview() {
   const search = useSearch({ from: "/" });
@@ -17,6 +20,7 @@ export function Overview() {
   const cats = useCats();
   const month = search.month ?? currentMonth();
   const mode = search.mode ?? "year";
+  const costs = search.costs ?? "all";
   const year = Number(month.slice(0, 4));
   const step = (n: number) =>
     navigate({ search: (s) => ({ ...s, month: mode === "year" ? `${year + n}-${month.slice(5)}` : addMonths(month, n) }) });
@@ -36,7 +40,7 @@ export function Overview() {
           />
           <button className="btn" onClick={() => open({ kind: "import" })}><Icon name="import" />Import Statement</button>
         </div>
-        {!cats ? null : mode === "month" ? <MonthView month={month} cats={cats} /> : <YearView year={year} cats={cats} />}
+        {!cats ? null : mode === "month" ? <MonthView month={month} cats={cats} /> : <YearView year={year} month={month} costs={costs} cats={cats} />}
       </div>
     </div>
   );
@@ -88,17 +92,20 @@ function MonthView({ month, cats }: { month: string; cats: CatIndex }) {
 
       <div className="ov-grid">
         <div className="col-gap min0">
-          {barTotal > 0 && (
+          {(barTotal > 0 || model.yearlyCostTotal !== 0) && (
             <div className="card storage">
-              <div className="row1"><b>Where it went</b><span className="num">{money(barTotal)} spent</span></div>
-              <div className="sbar" role="img" aria-label={model.bar.map((b) => `${b.label} ${Math.round((b.amount / barTotal) * 100)}%`).join(", ")}>
-                {model.bar.map((b) => <i key={b.label} style={{ background: b.color, flexGrow: b.amount }} />)}
-              </div>
-              <div className="legend">
-                {model.bar.map((b) => (
-                  <span key={b.label}><i style={{ background: b.color }} />{b.label} {Math.round((b.amount / barTotal) * 100)}%</span>
-                ))}
-              </div>
+              <div className="row1"><b>Where it went</b><span className="num">{money(barTotal)} {model.yearlyCostTotal !== 0 ? "charted" : "spent"}</span></div>
+              {barTotal > 0 && <>
+                <div className="sbar" role="img" aria-label={model.bar.map((b) => `${b.label} ${Math.round((b.amount / barTotal) * 100)}%`).join(", ")}>
+                  {model.bar.map((b) => <i key={b.label} style={{ background: b.color, flexGrow: b.amount }} />)}
+                </div>
+                <div className="legend">
+                  {model.bar.map((b) => (
+                    <span key={b.label}><i style={{ background: b.color }} />{b.label} {Math.round((b.amount / barTotal) * 100)}%</span>
+                  ))}
+                </div>
+              </>}
+              {model.yearlyCostTotal !== 0 && <p className="chart-note">Yearly costs excluded from chart: {money(model.yearlyCostTotal)}</p>}
             </div>
           )}
           <div className="group cat-list">
@@ -182,7 +189,7 @@ const toggler = (set: Dispatch<SetStateAction<Set<string>>>, all: Series[]) => (
   set((h) => {
     const next = new Set(h);
     next.has(key) ? next.delete(key) : next.add(key);
-    return next.size === all.length ? h : next;
+    return all.every((s) => next.has(s.key)) ? h : next;
   });
 /** Showing one series alone, or everything again when it already is. */
 const soloer = (set: Dispatch<SetStateAction<Set<string>>>, all: Series[]) => (key: string) =>
@@ -191,38 +198,63 @@ const soloer = (set: Dispatch<SetStateAction<Set<string>>>, all: Series[]) => (k
     return alone ? new Set() : new Set(all.filter((s) => s.key !== key).map((s) => s.key));
   });
 
-function YearView({ year, cats }: { year: number; cats: CatIndex }) {
+function YearView({ year, month, costs, cats }: { year: number; month: string; costs: CostFilter; cats: CatIndex }) {
   const navigate = useNavigate({ from: "/" });
   const totals = useTotals(`${year}-01-01`, `${year}-12-31`).data;
   const model = useMemo(() => totals && yearModel(totals, cats, year), [totals, cats, year]);
+  const chartCosts = useMemo(() => totals && yearChartCosts(totals, cats, year), [totals, cats, year]);
+  const chartModel = useMemo(() => chartCosts && yearModel(chartCosts.chartTotals, cats, year), [chartCosts, cats, year]);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
-  // With one category left in view, the chart and table break it down by subcategory.
+  // Drill into a single category in the chart, or an excluded category selected in the table.
   const visibleTops = model?.series.filter((s) => !hidden.has(s.key)) ?? [];
-  const drillId = visibleTops.length === 1 && /^c\d+$/.test(visibleTops[0].key) ? Number(visibleTops[0].key.slice(1)) : null;
+  const visibleChartTops = chartModel?.series.filter((s) => !hidden.has(s.key)) ?? [];
+  const drillTops = hidden.size > 0 && visibleChartTops.length > 0 ? visibleChartTops : visibleTops;
+  const drillId = drillTops.length === 1 && /^c\d+$/.test(drillTops[0].key) ? Number(drillTops[0].key.slice(1)) : null;
   const subs = useMemo(
     () => (drillId != null && totals ? subcategorySeries(totals, cats, year, drillId) : null),
     [drillId, totals, cats, year],
   );
-  const [hiddenSub, setHiddenSub] = useState<Set<string>>(new Set());
-  useEffect(() => setHiddenSub(new Set()), [drillId]);
-  if (!totals || !model) return null;
+  const [subFilter, setSubFilter] = useState({ drillId, hidden: new Set<string>() });
+  if (subFilter.drillId !== drillId) setSubFilter({ drillId, hidden: new Set() });
+  const setHiddenSub: Dispatch<SetStateAction<Set<string>>> = (update) => {
+    setSubFilter((previous) => ({ drillId, hidden: typeof update === "function" ? update(previous.hidden) : update }));
+  };
+  if (!totals || !model || !chartCosts || !chartModel) return null;
 
+  const { chartTotals, excludedCosts } = chartCosts;
   const now = currentMonth();
   const nowYear = Number(now.slice(0, 4));
   const lastMonth = year < nowYear ? 11 : year === nowYear ? Number(now.slice(5)) - 1 : -1;
+  const pickMonth = (m: number) => navigate({ search: { month: `${year}-${String(m + 1).padStart(2, "0")}`, mode: "month" } });
+
+  if (model.series.length === 0 && excludedCosts.length === 0) {
+    return <div className="card"><Empty title={`No spending in ${year}`}>Import statements covering {year} to see it month by month.</Empty></div>;
+  }
+
   const months = monthsCovered(totals, year, lastMonth);
   const drilled = drillId != null && subs != null ? cats.byId.get(drillId) : undefined;
   const series = drilled ? subs! : model.series;
-  const shownHidden = drilled ? hiddenSub : hidden;
-  const toggle = drilled ? toggler(setHiddenSub, series) : toggler(setHidden, series);
+  const tableSeriesByKey = new Map(series.map((s) => [s.key, s]));
+  const chartSeries = drilled ? subcategorySeries(chartTotals, cats, year, drilled.id).map((s) => {
+    const full = tableSeriesByKey.get(s.key);
+    return full ? { ...s, name: full.name, color: full.color } : s;
+  }) : chartModel.series;
+  const flexibleTotals = withoutFixed(chartTotals, cats);
+  const flexibleModel = yearModel(flexibleTotals, cats, year);
+  // The pie stays at category level even when the year chart or table is filtered.
+  const pieModel = yearModel(costFilterTotals(chartTotals, cats, costs), cats, year);
+  const shares = spendingShares(pieModel.series, months);
+  const shownHidden = drilled ? subFilter.hidden : hidden;
+  const toggle = toggler(drilled ? setHiddenSub : setHidden, chartSeries);
   const solo = drilled ? soloer(setHiddenSub, series) : soloer(setHidden, series);
+  const openSlice = (key: string) =>
+    navigate({ to: "/categories/$categoryId", params: { categoryId: key === "uncategorized" ? key : key.slice(1) }, search: { month, costs: costs === "all" ? undefined : costs } });
   const monthTotal = (m: number) => series.reduce((sum, s) => sum + s.data[m], 0);
   const yearTotal = series.reduce((sum, s) => sum + s.data.reduce((a, b) => a + b, 0), 0);
-  const pickMonth = (m: number) => navigate({ search: { month: `${year}-${String(m + 1).padStart(2, "0")}`, mode: "month" } });
-
-  if (model.series.length === 0) {
-    return <div className="card"><Empty title={`No spending in ${year}`}>Import statements covering {year} to see it month by month.</Empty></div>;
-  }
+  const averageSpent = monthlyAverage(model.series, months) ?? 0;
+  const flexibleAverage = monthlyAverage(flexibleModel.series, months) ?? 0;
+  const fixedAverage = averageSpent - flexibleAverage;
+  const tableAverage = monthlyAverage(series, months);
 
   return (
     <>
@@ -230,7 +262,23 @@ function YearView({ year, cats }: { year: number; cats: CatIndex }) {
         <div><div className="l">Income</div><div className="v pos">{money(model.income, { plus: true })}</div></div>
         <div><div className="l">Spent</div><div className="v">{money(model.spent)}</div></div>
         <div><div className="l">Saved</div><div className="v">{money(model.saved, { plus: true })}</div></div>
-        <div><div className="l">Average spent per month</div><div className="v">{months > 0 ? money(model.spent / months) : "–"}</div></div>
+        <div className="average-breakdown">
+          <div className="l">Average spent per month</div>
+          {[{ label: "Fixed costs", amount: fixedAverage }, { label: "Non-fixed costs", amount: flexibleAverage }].map(({ label, amount }) => (
+            <div className="average-row" key={label}>
+              <div className="l">{label}</div>
+              <div className="average-values">
+                <span className="v">{months > 0 ? money(-amount) : "–"}</span>
+                {averageSpent > 0 && (
+                  <span className="average-share" title="Share of the monthly average">{averageShare.format(amount / averageSpent)}</span>
+                )}
+              </div>
+            </div>
+          ))}
+          <div className="average-total">
+            <span>Total</span><b className="num">{months > 0 ? money(-averageSpent) : "–"}</b>
+          </div>
+        </div>
       </div>
       <div className="card chart-card">
         <div className="chart-head">
@@ -243,7 +291,7 @@ function YearView({ year, cats }: { year: number; cats: CatIndex }) {
               <Icon name="left" />All categories
             </button>
           )}
-          {series.map((s) => (
+          {chartSeries.map((s) => (
             <button key={s.key} type="button" aria-pressed={!shownHidden.has(s.key)} onClick={() => toggle(s.key)}>
               <i style={{ ["--k" as string]: s.color }} />{s.name}
             </button>
@@ -252,39 +300,68 @@ function YearView({ year, cats }: { year: number; cats: CatIndex }) {
             <button type="button" className="reset" onClick={() => (drilled ? setHiddenSub(new Set()) : setHidden(new Set()))}>Show all</button>
           )}
         </div>
-        <YearChart
-          series={series}
-          year={year}
-          lastMonth={lastMonth}
-          hidden={shownHidden}
-          onPickMonth={pickMonth}
-          what={drilled ? `on ${drilled.name} by subcategory` : "by category"}
-        />
+        {chartSeries.some((s) => !shownHidden.has(s.key)) ? (
+          <YearChart
+            series={chartSeries}
+            year={year}
+            lastMonth={lastMonth}
+            hidden={shownHidden}
+            onPickMonth={pickMonth}
+            what={drilled ? `on ${drilled.name} by subcategory` : "by category"}
+          />
+        ) : <Empty title="No charted spending in this view" />}
       </div>
+      <SharesCard
+        shares={shares}
+        title="Share of positive monthly average spend by category"
+        emptyMessage="Try another cost type to see its categories."
+        hidden={new Set()}
+        onPick={openSlice}
+        hint="Hover a slice for its share, click to open the category"
+        controls={<Segmented<CostFilter> label="Costs shown in the pie" value={costs}
+          options={[{ value: "all", label: "All costs" }, { value: "fixed", label: "Fixed costs" }, { value: "nonfixed", label: "Non-fixed costs" }]}
+          onChange={(value) => navigate({ search: (search) => ({ ...search, costs: value === "all" ? undefined : value }) })} />}
+      />
+      {excludedCosts.length > 0 && (
+        <section className="card excluded-costs" aria-labelledby="excluded-costs-heading">
+          <div className="chart-head">
+            <h2 id="excluded-costs-heading">Yearly costs excluded from charts</h2>
+            <span>{year} · Net of reimbursements</span>
+          </div>
+          <dl>
+            {excludedCosts.map(({ cat, amount }) => (
+              <div key={cat.id}><dt>{cat.path}</dt><dd className="num">{money(amount)}</dd></div>
+            ))}
+            <div className="excluded-total"><dt>Total</dt><dd className="num">{money(excludedCosts.reduce((sum, cost) => sum + cost.amount, 0))}</dd></div>
+          </dl>
+        </section>
+      )}
       <div className="card ytable-wrap">
         <table className="ytable">
           <caption>
             {drilled
               ? `Spent on ${drilled.name} per month in euros, by subcategory. Click one to plot it alone.`
               : "Spent per month in euros. Click a category to plot it alone and see its subcategories."}
+            {excludedCosts.length > 0 && " Totals include costs shown separately above."}
           </caption>
           <thead>
             <tr>
               <th>{drilled ? "Subcategory" : "Category"}</th>
               {MONTHS_SHORT.map((m) => <th key={m}>{m}</th>)}
               <th>{year}</th>
-              <th>Per month</th>
+              <th title="Excludes categories marked Yearly cost.">Per month</th>
             </tr>
           </thead>
           <tbody>
             {series.map((s) => {
               const sum = s.data.reduce((a, b) => a + b, 0);
+              const average = monthlyAverage([s], months);
               return (
                 <tr key={s.key} className={shownHidden.has(s.key) ? "off" : ""} onClick={() => solo(s.key)}>
                   <td><span className="key" style={{ ["--k" as string]: s.color }} />{s.name}</td>
                   {s.data.map((v, m) => <td key={m} className={m > lastMonth ? "future" : ""}>{m > lastMonth || v === 0 ? "–" : euros(v)}</td>)}
                   <td className="sum">{euros(sum)}</td>
-                  <td>{months > 0 ? euros(sum / months) : "–"}</td>
+                  <td title={s.averageTotal == null ? "Excluded from the monthly average" : undefined}>{average != null ? euros(average) : "–"}</td>
                 </tr>
               );
             })}
@@ -294,7 +371,7 @@ function YearView({ year, cats }: { year: number; cats: CatIndex }) {
               <td>{drilled ? `Total ${drilled.name}` : "Total"}</td>
               {MONTHS_SHORT.map((m, i) => <td key={m} className={i > lastMonth ? "future" : ""}>{i > lastMonth ? "–" : euros(monthTotal(i))}</td>)}
               <td>{euros(yearTotal)}</td>
-              <td>{months > 0 ? euros(yearTotal / months) : "–"}</td>
+              <td>{tableAverage != null ? euros(tableAverage) : "–"}</td>
             </tr>
           </tfoot>
         </table>

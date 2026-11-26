@@ -15,10 +15,15 @@ friends pay back by Tikkie comes off the expense it pays back.
 
 ### See where your money goes
 
-The **year view** stacks each month's spending by category. Click a category to break it down by
-subcategory, or turn categories on and off to compare the smaller ones. The **month view** shows
-where the money went, how each category compares with the month before, and what was moved to
-savings or investments instead of spent.
+The **year view** stacks each month's spending by category. Click a pie slice to open that
+category's subcategory charts, or turn categories on and off in the year chart to compare them.
+The **month view** shows where the money went, how each category compares with the month before,
+and what was moved to savings or investments instead of spent.
+
+Tag expense categories **Fixed** to see fixed and non-fixed monthly averages and switch the
+spending-share pie between all, fixed and non-fixed costs. Tag a category **Yearly cost** to leave
+it out of monthly averages and charts; its total stays visible in the year view. Both tags apply
+to subcategories and can be changed in **Categories**.
 
 <table>
   <tr>

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import type { Category, Total, Tx } from "../api";
 import { indexCategories, OTHER_COLOR } from "./categories";
 import { addMonths, money, monthRange, parseMoney } from "./format";
-import { monthModel, monthsCovered, spendDelta, subcategorySeries, transferBreakdown, yearModel } from "./overview";
+import { costFilterTotals, monthModel, monthlyAverage, monthsCovered, spendDelta, spendingShares, subcategorySeries, transferBreakdown, withoutFixed, yearChartCosts, yearModel } from "./overview";
 import { quickPicks } from "./picks";
 import { groupRules, subcategoryLabel } from "./rules";
 import { counterpartyKey, detectExport, suggestPattern, txSubtitle } from "./text";
@@ -17,13 +17,16 @@ const tx = (over: Partial<Tx>): Tx => ({
   groupId: null, linkKind: null, linkTitle: null, linkCounterAccountId: null, notes: null, splits: [], ruleId: null, ...over,
 });
 
+const category = (c: Omit<Category, "fixed" | "yearlyCost"> & Partial<Pick<Category, "fixed" | "yearlyCost">>): Category =>
+  ({ fixed: false, yearlyCost: false, ...c });
+
 const CATS: Category[] = [
-  { id: 1, parentId: null, name: "Housing", kind: "expense" },
-  { id: 2, parentId: 1, name: "Rent", kind: "expense" },
-  { id: 3, parentId: null, name: "Food", kind: "expense" },
-  { id: 4, parentId: 3, name: "Dining out", kind: "expense" },
-  { id: 5, parentId: null, name: "Income", kind: "income" },
-  { id: 6, parentId: 5, name: "Salary", kind: "income" },
+  category({ id: 1, parentId: null, name: "Housing", kind: "expense" }),
+  category({ id: 2, parentId: 1, name: "Rent", kind: "expense" }),
+  category({ id: 3, parentId: null, name: "Food", kind: "expense" }),
+  category({ id: 4, parentId: 3, name: "Dining out", kind: "expense" }),
+  category({ id: 5, parentId: null, name: "Income", kind: "income" }),
+  category({ id: 6, parentId: 5, name: "Salary", kind: "income" }),
 ];
 
 describe("format", () => {
@@ -74,6 +77,64 @@ describe("overview", () => {
     year: 2026, month, categoryId, bucket: null, amount, spent: Math.min(amount, 0), received: Math.max(amount, 0), ...extra,
   });
 
+  it("inherits independent cost tags and excludes their descendants from the selected views", () => {
+    const tagged = indexCategories(CATS.map((c) => c.id === 1 ? { ...c, fixed: true } : c.id === 3 ? { ...c, yearlyCost: true } : c));
+    expect(tagged.byId.get(2)).toMatchObject({ fixed: true, fixedByParent: true, yearlyCost: false });
+    expect(tagged.byId.get(4)).toMatchObject({ yearlyCost: true, yearlyCostByParent: true, fixed: false });
+    const totals = [total(1, 2, -10000), total(2, 4, -12000), total(3, 4, 2000), total(4, 6, 30000)];
+    expect(withoutFixed(totals, tagged).map((t) => t.categoryId)).toEqual([4, 4, 6]);
+    const chart = yearChartCosts(totals, tagged, 2026);
+    expect(chart.chartTotals.map((t) => t.categoryId)).toEqual([2, 6]);
+    expect(chart.excludedCosts.map((c) => [c.cat.path, c.amount])).toEqual([["Food", 10000]]);
+    const model = yearModel(totals, tagged, 2026);
+    expect(model.spent).toBe(-20000);
+    expect(monthlyAverage(model.series, 4)).toBe(2500);
+    const month = monthModel([total(1, 2, -10000), total(1, 4, -12000)], tagged, "2026-01");
+    expect(month.spent).toBe(-22000);
+    expect(month.bar.map((b) => [b.label, b.amount])).toEqual([["Housing", 10000]]);
+    expect(month.yearlyCostTotal).toBe(12000);
+    const childTagged = indexCategories(CATS.map((c) => c.id === 4 ? { ...c, yearlyCost: true } : c));
+    const offset = monthModel([total(1, 3, -12000), total(1, 4, 12000)], childTagged, "2026-01");
+    expect(offset.spent).toBe(0);
+    expect(offset.bar.map((b) => [b.label, b.amount])).toEqual([["Food", 12000]]);
+  });
+
+  it("groups yearly costs under their tagged ancestor while retaining annual totals", () => {
+    const categories = indexCategories([
+      ...CATS.map((c) => c.id === 2 ? { ...c, yearlyCost: true } : c),
+      category({ id: 7, parentId: 2, name: "Deposit", kind: "expense", yearlyCost: true }),
+      category({ id: 8, parentId: 1, name: "Utilities", kind: "expense", fixed: true }),
+    ]);
+    const totals = [total(1, 2, -6000), total(2, 2, 1000), total(1, 7, -3000), total(1, 8, -2000), total(2, 4, -1000)];
+    const { chartTotals, excludedCosts } = yearChartCosts(totals, categories, 2026);
+    expect(excludedCosts.map(({ cat, amount }) => [cat.path, amount])).toEqual([["Housing › Rent", 8000]]);
+    expect(chartTotals.map((t) => t.categoryId)).toEqual([8, 4]);
+    const whole = yearModel(totals, categories, 2026);
+    expect(whole.spent).toBe(-11000);
+    expect(monthlyAverage(whole.series, 2)).toBe(1500);
+    expect(costFilterTotals(chartTotals, categories, "fixed").map((t) => t.categoryId)).toEqual([8]);
+    expect(costFilterTotals(chartTotals, categories, "nonfixed").map((t) => t.categoryId)).toEqual([4]);
+    const shares = (rows: Total[]) => spendingShares(yearModel(rows, categories, 2026).series, 2);
+    expect(shares(chartTotals).map(({ name, total, color }) => [name, total, color])).toEqual([
+      ["Housing", 2000, "var(--s1)"], ["Food", 1000, "var(--s2)"],
+    ]);
+    expect(shares(withoutFixed(chartTotals, categories)).map(({ name }) => name)).toEqual(["Food"]);
+    expect(subcategorySeries(totals, categories, 2026, 1).map((s) => s.color)).toEqual([
+      "color-mix(in srgb, var(--s1) 100%, var(--label))",
+      "color-mix(in srgb, var(--s1) 35%, var(--label))",
+    ]);
+    expect(subcategorySeries([total(1, 8, -2000)], categories, 2026, 1)[0].color).toBe(
+      "color-mix(in srgb, var(--s1) 35%, var(--label))",
+    );
+  });
+
+  it("bases pie shares on positive net spending when another category has net refunds", () => {
+    const series = yearModel([total(1, 2, -10000), total(1, 4, 2000)], cats, 2026).series;
+    expect(monthlyAverage(series, 1)).toBe(8000);
+    expect(spendingShares(series, 1).map(({ name, total, share }) => [name, total, share]))
+      .toEqual([["Housing", 10000, 1]]);
+  });
+
   it("builds the month: income, spending, rows with children and deltas", () => {
     const totals = [
       total(10, 2, -115000), total(11, 2, -115000),
@@ -109,16 +170,15 @@ describe("overview", () => {
   });
 
   it("builds the year: one series per top-level expense category, never folded into Other", () => {
-    const many: Category[] = [...CATS, ...[7, 8, 9, 10, 11].map((id) => ({ id, parentId: null, name: `Cat ${id}`, kind: "expense" as const }))];
+    const many: Category[] = [...CATS, ...[7, 8, 9, 10, 11].map((id) => category({ id, parentId: null, name: `Cat ${id}`, kind: "expense" }))];
     const index = indexCategories(many);
     const y = yearModel([total(1, 2, -100000), total(3, 11, -500), total(2, 6, 300000), total(2, null, -700, { bucket: "out" })], index, 2026);
     expect(y.series.map((s) => s.name)).toEqual(["Housing", "Cat 11", "Uncategorized"]);
     expect(y.series[0].data[0]).toBe(100000);
     expect(y.series[1].color).toBe("var(--s8)"); // the seventh expense category gets the seventh hue
-    const crowded = indexCategories([...many, ...[12, 13, 14, 15].map((id) => ({ id, parentId: null, name: `Cat ${id}`, kind: "expense" as const }))]);
-    const eleventh = yearModel([total(1, 15, -100)], crowded, 2026).series[0];
+    const packed = indexCategories([...many, ...[12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map((id) => category({ id, parentId: null, name: `Cat ${id}`, kind: "expense" }))]);
+    const eleventh = yearModel([total(1, 15, -100)], packed, 2026).series[0];
     expect([eleventh.name, eleventh.color]).toEqual(["Cat 15", "var(--s12)"]); // the eleventh has its own hue too
-    const packed = indexCategories([...many, ...[12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map((id) => ({ id, parentId: null, name: `Cat ${id}`, kind: "expense" as const }))]);
     const far = yearModel([total(1, 21, -100)], packed, 2026).series[0];
     expect([far.name, far.color]).toEqual(["Cat 21", OTHER_COLOR]); // past the sixteen hues: gray, but still by name
     expect(y.income).toBe(300000);
@@ -199,8 +259,8 @@ describe("rule groups", () => {
 describe("subcategory breakdown", () => {
   const cats = indexCategories([
     ...CATS,
-    { id: 7, parentId: 3, name: "Groceries", kind: "expense" },
-    { id: 8, parentId: 7, name: "Organic", kind: "expense" },
+    category({ id: 7, parentId: 3, name: "Groceries", kind: "expense" }),
+    category({ id: 8, parentId: 7, name: "Organic", kind: "expense" }),
   ]);
   const t = (month: number, categoryId: number, amount: number): Total => ({
     year: 2026, month, categoryId, bucket: null, amount, spent: Math.max(-amount, 0), received: Math.max(amount, 0),
@@ -221,7 +281,7 @@ describe("subcategory breakdown", () => {
   });
 
   it("shows a category without subcategories as itself", () => {
-    const series = subcategorySeries([t(1, 3, -1200)], indexCategories([{ id: 3, parentId: null, name: "Food", kind: "expense" }]), 2026, 3);
+    const series = subcategorySeries([t(1, 3, -1200)], indexCategories([category({ id: 3, parentId: null, name: "Food", kind: "expense" })]), 2026, 3);
     expect(series.map((s) => [s.name, s.data[0]])).toEqual([["Food", 1200]]);
   });
 });

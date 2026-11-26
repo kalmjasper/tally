@@ -32,16 +32,18 @@ export function CategoriesSheet({ onClose }: { onClose: () => void }) {
   const [newName, setNewName] = useState("");
   const [newParent, setNewParent] = useState<number | null>(null);
   const [newKind, setNewKind] = useState<CategoryKind>("expense");
+  const [newFixed, setNewFixed] = useState(false);
+  const [newYearlyCost, setNewYearlyCost] = useState(false);
 
   const create = useAction(
-    async (parentId: number | null, n: string, kind: CategoryKind) => {
+    async (parentId: number | null, n: string, kind: CategoryKind, fixed: boolean, yearlyCost: boolean) => {
       try {
-        return await api.createCategory(parentId, n, kind);
+        return await api.createCategory(parentId, n, kind, fixed, yearlyCost);
       } catch (e) {
         throw friendly(e, `There's already a category called "${n}" there.`);
       }
     },
-    { onSuccess: () => setNewName("") },
+    { onSuccess: () => { setNewName(""); setNewFixed(false); setNewYearlyCost(false); } },
   );
   const update = useAction(
     async (id: number, n: string, parentId: number | null) => {
@@ -63,6 +65,9 @@ export function CategoriesSheet({ onClose }: { onClose: () => void }) {
     },
     { onSuccess: () => setEditing(null) },
   );
+  const setTags = useAction((c: CatInfo, tag: "fixed" | "yearlyCost") =>
+    api.setCategoryTags(c.id, tag === "fixed" ? !c.ownFixed : c.ownFixed, tag === "yearlyCost" ? !c.ownYearlyCost : c.ownYearlyCost),
+  );
   const starter = useAction(
     async () => {
       for (const top of STARTER_CATEGORIES) {
@@ -75,9 +80,16 @@ export function CategoriesSheet({ onClose }: { onClose: () => void }) {
 
   if (!cats) return null;
   const newKindEffective = newParent != null ? cats.byId.get(newParent)!.kind : newKind;
+  const parentCategory = newParent == null ? null : cats.byId.get(newParent)!;
+  const canTagNew = newKindEffective === "expense";
+  const createNew = () => create.mutate([
+    newParent, newName.trim(), newKindEffective,
+    canTagNew && !parentCategory?.fixed && newFixed,
+    canTagNew && !parentCategory?.yearlyCost && newYearlyCost,
+  ]);
 
   return (
-    <Sheet title="Categories" subtitle="Rename or move a category with the pencil. A category in use can't be deleted." onClose={onClose} wide footer={<button className="btn primary" onClick={onClose}>Done</button>}>
+    <Sheet title="Categories" subtitle="Tag expense categories as Fixed or Yearly cost. Tags also apply to their subcategories." onClose={onClose} wide footer={<button className="btn primary" onClick={onClose}>Done</button>}>
       {cats.ordered.length === 0 ? (
         <Empty title="No categories yet">
           <p>Start with a common set (Housing, Food, Shopping, Travel and more) and adjust it to your own.</p>
@@ -102,7 +114,17 @@ export function CategoriesSheet({ onClose }: { onClose: () => void }) {
               <div className="grow" key={c.id} style={{ paddingLeft: 12 + c.depth * 24 }}>
                 <CategoryIcon cat={c} size="sm" />
                 <span className="grow-1">{c.name}</span>
-                {c.depth === 0 && <span className="v">{c.kind === "income" ? "Income" : "Expense"}</span>}
+                {c.kind === "expense" && (
+                  <div className="category-tags">
+                    <button type="button" className="category-tag" aria-pressed={c.fixed}
+                      aria-label={`Fixed cost: ${c.name}${c.fixedByParent ? ", inherited from parent" : ""}`}
+                      disabled={c.fixedByParent || setTags.isPending} onClick={() => setTags.mutate([c, "fixed"])}>Fixed{c.fixedByParent && <small> · inherited</small>}</button>
+                    <button type="button" className="category-tag" aria-pressed={c.yearlyCost}
+                      aria-label={`Yearly cost: ${c.name}${c.yearlyCostByParent ? ", inherited from parent" : ""}`}
+                      disabled={c.yearlyCostByParent || setTags.isPending} onClick={() => setTags.mutate([c, "yearlyCost"])}>Yearly cost{c.yearlyCostByParent && <small> · inherited</small>}</button>
+                  </div>
+                )}
+                {c.depth === 0 && c.kind === "income" && <span className="v">Income</span>}
                 <button className="icon-btn" aria-label={`Edit ${c.name}`} onClick={() => { setEditing(c.id); setName(c.name); setParent(c.parentId); }}>
                   <Icon name="pencil" />
                 </button>
@@ -114,7 +136,7 @@ export function CategoriesSheet({ onClose }: { onClose: () => void }) {
 
       <div className="add-row">
         <input id="new-category" className="field grow-1" placeholder="New category" value={newName} onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && newName.trim() && create.mutate([newParent, newName.trim(), newKindEffective])} />
+          onKeyDown={(e) => e.key === "Enter" && newName.trim() && createNew()} />
         <select className="field" aria-label="Parent of the new category" value={newParent ?? ""} onChange={(e) => setNewParent(e.target.value ? Number(e.target.value) : null)}>
           <option value="">Top level</option>
           {cats.ordered.map((p) => <option key={p.id} value={p.id}>{p.path}</option>)}
@@ -125,9 +147,18 @@ export function CategoriesSheet({ onClose }: { onClose: () => void }) {
             <option value="income">Income</option>
           </select>
         )}
-        <button className="btn" disabled={!newName.trim() || create.isPending} onClick={() => create.mutate([newParent, newName.trim(), newKindEffective])}>
+        <button className="btn" disabled={!newName.trim() || create.isPending} onClick={createNew}>
           <Icon name="plus" />Add
         </button>
+      </div>
+      <div className="new-category-tags" role="group" aria-label="Tags for new category">
+        <span>Tags</span>
+        <button type="button" className="category-tag" aria-pressed={canTagNew && (!!parentCategory?.fixed || newFixed)}
+          disabled={!canTagNew || !!parentCategory?.fixed} aria-label={`Fixed cost${parentCategory?.fixed ? ", inherited from parent" : ""}`}
+          onClick={() => setNewFixed((v) => !v)}>Fixed{parentCategory?.fixed && <small> · inherited</small>}</button>
+        <button type="button" className="category-tag" aria-pressed={canTagNew && (!!parentCategory?.yearlyCost || newYearlyCost)}
+          disabled={!canTagNew || !!parentCategory?.yearlyCost} aria-label={`Yearly cost${parentCategory?.yearlyCost ? ", inherited from parent" : ""}`}
+          onClick={() => setNewYearlyCost((v) => !v)}>Yearly cost{parentCategory?.yearlyCost && <small> · inherited</small>}</button>
       </div>
     </Sheet>
   );

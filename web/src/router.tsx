@@ -2,6 +2,7 @@ import { createRootRoute, createRoute, createRouter } from "@tanstack/react-rout
 
 import { isMonthKey } from "./lib/format";
 import { Inbox } from "./screens/Inbox";
+import { CategoryBreakdown } from "./screens/CategoryBreakdown";
 import { Layout } from "./screens/Layout";
 import { Overview } from "./screens/Overview";
 import { Pots } from "./screens/Pots";
@@ -15,6 +16,7 @@ export interface OverviewSearch {
   month?: string;
   /** The overview opens on the year; "month" shows one month. */
   mode?: "month";
+  costs?: "fixed" | "nonfixed";
 }
 
 export interface TransactionsSearch {
@@ -34,6 +36,7 @@ const overviewRoute = createRoute({
   validateSearch: (s: Record<string, unknown>): OverviewSearch => ({
     month: isMonthKey(s.month) ? s.month : undefined,
     mode: s.mode === "month" ? "month" : undefined,
+    costs: s.costs === "fixed" || s.costs === "nonfixed" ? s.costs : undefined,
   }),
   component: Overview,
 });
@@ -52,6 +55,16 @@ const transactionsRoute = createRoute({
   component: Transactions,
 });
 
+const categoryBreakdownRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/categories/$categoryId",
+  validateSearch: (s: Record<string, unknown>): { month?: string; costs?: "fixed" | "nonfixed" } => ({
+    month: isMonthKey(s.month) ? s.month : undefined,
+    costs: s.costs === "fixed" || s.costs === "nonfixed" ? s.costs : undefined,
+  }),
+  component: CategoryBreakdown,
+});
+
 const inboxRoute = createRoute({ getParentRoute: () => rootRoute, path: "/inbox", component: Inbox });
 
 const potsRoute = createRoute({
@@ -62,7 +75,7 @@ const potsRoute = createRoute({
 });
 
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([overviewRoute, transactionsRoute, inboxRoute, potsRoute]),
+  routeTree: rootRoute.addChildren([overviewRoute, categoryBreakdownRoute, transactionsRoute, inboxRoute, potsRoute]),
 });
 
 declare module "@tanstack/react-router" {

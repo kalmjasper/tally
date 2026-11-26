@@ -17,6 +17,8 @@ pub struct Category {
     pub parent_id: Option<i64>,
     pub name: String,
     pub kind: CategoryKind,
+    pub fixed: bool,
+    pub yearly_cost: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]

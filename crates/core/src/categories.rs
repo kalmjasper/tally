@@ -14,6 +14,19 @@ impl Ledger {
 
     /// A child category must have the same kind as its parent.
     pub async fn create_category(&self, parent_id: Option<i64>, name: &str, kind: CategoryKind) -> Result<Category> {
+        self.create_category_with_tags(parent_id, name, kind, false, false).await
+    }
+
+    /// Creates an expense category with its cost tags in one operation.
+    pub async fn create_category_with_tags(
+        &self,
+        parent_id: Option<i64>,
+        name: &str,
+        kind: CategoryKind,
+        fixed: bool,
+        yearly_cost: bool,
+    ) -> Result<Category> {
+        ensure_expense_tags(kind, fixed, yearly_cost)?;
         if let Some(parent_id) = parent_id {
             let parent = self.find_category(parent_id).await?;
             ensure_same_kind(&parent, kind)?;
@@ -22,6 +35,8 @@ impl Ledger {
             parent_id: Set(parent_id),
             name: Set(required_name(name)?),
             kind: Set(kind),
+            fixed: Set(fixed),
+            yearly_cost: Set(yearly_cost),
             ..Default::default()
         }
         .insert(&self.db)
@@ -53,6 +68,16 @@ impl Ledger {
         Ok(to_domain(active.update(&self.db).await?))
     }
 
+    /// Tags apply to expense categories; descendants inherit their effect in the overview.
+    pub async fn set_category_tags(&self, id: i64, fixed: bool, yearly_cost: bool) -> Result<Category> {
+        let category = self.find_category(id).await?;
+        ensure_expense_tags(category.kind, fixed, yearly_cost)?;
+        let mut active: categories::ActiveModel = category.into();
+        active.fixed = Set(fixed);
+        active.yearly_cost = Set(yearly_cost);
+        Ok(to_domain(active.update(&self.db).await?))
+    }
+
     /// Refused (by the foreign keys) while the category has children or splits.
     pub async fn delete_category(&self, id: i64) -> Result<()> {
         let res = categories::Entity::delete_by_id(id).exec(&self.db).await?;
@@ -67,6 +92,13 @@ impl Ledger {
     }
 }
 
+fn ensure_expense_tags(kind: CategoryKind, fixed: bool, yearly_cost: bool) -> Result<()> {
+    if kind != CategoryKind::Expense && (fixed || yearly_cost) {
+        return Err(Error::InvalidArgument("only expense categories can have cost tags".into()));
+    }
+    Ok(())
+}
+
 fn ensure_same_kind(parent: &categories::Model, kind: CategoryKind) -> Result<()> {
     if parent.kind != kind {
         return Err(Error::InvalidArgument(format!(
@@ -78,5 +110,5 @@ fn ensure_same_kind(parent: &categories::Model, kind: CategoryKind) -> Result<()
 }
 
 fn to_domain(m: categories::Model) -> Category {
-    Category { id: m.id, parent_id: m.parent_id, name: m.name, kind: m.kind }
+    Category { id: m.id, parent_id: m.parent_id, name: m.name, kind: m.kind, fixed: m.fixed, yearly_cost: m.yearly_cost }
 }

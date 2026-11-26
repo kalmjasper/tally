@@ -31,10 +31,15 @@ try {
   const tops = [...STARTER_CATEGORIES];
   tops.splice(tops.findIndex((t) => t.kind === "income"), 0, { name: "Leisure", kind: "expense", children: ["Going out", "Games"] });
   for (const top of tops) {
-    const created = await api.createCategory(null, top.name, top.kind);
+    const created = await api.createCategory(
+      null, top.name, top.kind,
+      top.name === "Housing" || top.name === "Subscriptions",
+      top.name === "Travel",
+    );
     cat[top.name] = created.id;
     for (const child of top.children ?? []) cat[child] = (await api.createCategory(created.id, child, top.kind)).id;
   }
+  cat["Annual fees"] = (await api.createCategory(cat.Fees, "Annual fees", "expense", false, true)).id;
 
   await api.importFile(bank.id, "ing_csv", "checking.csv", enc.encode(checking));
   await api.importFile(cc.id, "amex_csv", "card.csv", enc.encode(card));
@@ -47,6 +52,7 @@ try {
     ["webwinkel", "Shopping"], ["boekhandel", "Shopping"], ["elektro huis", "Shopping"],
     ["hotel", "Travel"], ["skyways", "Travel"], ["agriturismo", "Travel"],
     ["zorgverzekeraar", "Health"], ["fitclub", "Health"], ["apotheek", "Health"], ["kosten betaalpakket", "Fees"],
+    ["gemeente rivieren", "Annual fees"], ["domein atlas", "Annual fees"], ["fietsclub jaarlidmaatschap", "Annual fees"],
     ["podium noord", "Going out"], ["gamehub", "Games"],
     ["acme software", "Salary", "in"], ["marktplein", "Other income", "in"],
   ];

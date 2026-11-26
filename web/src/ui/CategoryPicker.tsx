@@ -146,7 +146,7 @@ export function CategoryPicker({
   );
 }
 
-/** Name, place in the tree and kind of a new category; picks it once created. */
+/** Name, place in the tree, kind and cost tags; picks it once created. */
 function NewCategoryForm({
   cats,
   initialName,
@@ -165,16 +165,23 @@ function NewCategoryForm({
   const [name, setName] = useState(initialName);
   const [parentId, setParentId] = useState<number | null>(null);
   const [kind, setKind] = useState<CategoryKind>(defaultKind);
+  const [fixed, setFixed] = useState(false);
+  const [yearlyCost, setYearlyCost] = useState(false);
   const [busy, setBusy] = useState(false);
   const parent = parentId != null ? cats.byId.get(parentId) : undefined;
   const effectiveKind = parent?.kind ?? kind;
+  const canTag = effectiveKind === "expense";
 
   const create = async () => {
     const n = name.trim();
     if (!n || busy) return;
     setBusy(true);
     try {
-      const created = await api.createCategory(parentId, n, effectiveKind);
+      const created = await api.createCategory(
+        parentId, n, effectiveKind,
+        canTag && !parent?.fixed && fixed,
+        canTag && !parent?.yearlyCost && yearlyCost,
+      );
       // Refresh the tree first so whoever receives the id can already show the new category.
       await qc.invalidateQueries({ queryKey: ["categories"] });
       toast(`${parent ? `${parent.path} › ` : ""}${n} created`);
@@ -212,6 +219,15 @@ function NewCategoryForm({
           ))}
         </div>
       )}
+      <div className="new-category-tags" role="group" aria-label="Tags for new category">
+        <span>Tags</span>
+        <button type="button" className="category-tag" aria-pressed={canTag && (!!parent?.fixed || fixed)}
+          disabled={!canTag || !!parent?.fixed} aria-label={`Fixed cost${parent?.fixed ? ", inherited from parent" : ""}`}
+          onClick={() => setFixed((v) => !v)}>Fixed{parent?.fixed && <small> · inherited</small>}</button>
+        <button type="button" className="category-tag" aria-pressed={canTag && (!!parent?.yearlyCost || yearlyCost)}
+          disabled={!canTag || !!parent?.yearlyCost} aria-label={`Yearly cost${parent?.yearlyCost ? ", inherited from parent" : ""}`}
+          onClick={() => setYearlyCost((v) => !v)}>Yearly cost{parent?.yearlyCost && <small> · inherited</small>}</button>
+      </div>
       <div className="new-category-btns">
         <button type="button" className="btn" onClick={onCancel}>Back</button>
         <button type="submit" className="btn primary" disabled={!name.trim() || busy}>Create</button>

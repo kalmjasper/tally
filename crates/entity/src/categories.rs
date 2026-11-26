@@ -13,6 +13,8 @@ pub struct Model {
     #[sea_orm(column_type = "Text", unique_key = "categories_parent_id_name_key")]
     pub name: String,
     pub kind: CategoryKind,
+    pub fixed: bool,
+    pub yearly_cost: bool,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

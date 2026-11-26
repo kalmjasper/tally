@@ -43,8 +43,10 @@ try {
   }
   if (want("drill")) {
     const page = await open("/?month=2026-11");
-    await page.waitForSelector(".ytable");
-    await clickRow(page, ".ytable tbody tr", "Food");
+    await page.waitForSelector(".shares");
+    await clickRow(page, ".shares button", "Food");
+    await page.waitForSelector(".category-breakdown-sub");
+    await page.$eval(".main", (el) => { el.scrollTop = 0; });
     await shot(page, "drill");
   }
   if (want("month")) await shot(await open("/?mode=month&month=2026-10"), "month");

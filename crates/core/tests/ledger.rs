@@ -7,6 +7,23 @@ use common::{amex, date, ing, ledger, tx};
 use tally_core::*;
 
 #[tokio::test]
+async fn cost_tags_are_independent_and_only_apply_to_expenses() {
+    let l = ledger().await;
+    let housing = l.create_category(None, "Housing", CategoryKind::Expense).await.unwrap();
+    let salary = l.create_category(None, "Salary", CategoryKind::Income).await.unwrap();
+    assert!(!housing.fixed && !housing.yearly_cost);
+    let fixed = l.set_category_tags(housing.id, true, false).await.unwrap();
+    assert!(fixed.fixed && !fixed.yearly_cost);
+    let both = l.set_category_tags(housing.id, true, true).await.unwrap();
+    assert!(both.fixed && both.yearly_cost);
+    assert!(matches!(l.set_category_tags(salary.id, false, true).await, Err(Error::InvalidArgument(_))));
+    assert!(l.list_categories().await.unwrap().iter().any(|c| c.id == housing.id && c.fixed && c.yearly_cost));
+    let created = l.create_category_with_tags(None, "Annual insurance", CategoryKind::Expense, true, true).await.unwrap();
+    assert!(created.fixed && created.yearly_cost);
+    assert!(matches!(l.create_category_with_tags(None, "Bonus", CategoryKind::Income, true, false).await, Err(Error::InvalidArgument(_))));
+}
+
+#[tokio::test]
 async fn overlapping_imports_are_idempotent_and_undoable() {
     let l = ledger().await;
     let ing_account = l.create_account("ING").await.unwrap();

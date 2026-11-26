@@ -9,6 +9,8 @@ service CategoryService {
   rpc CreateCategory(CreateCategoryRequest) returns (CreateCategoryResponse);
   // Renames and/or moves a category. An absent parent_id makes it top-level.
   rpc UpdateCategory(UpdateCategoryRequest) returns (UpdateCategoryResponse);
+  // Set two independent tags on an expense category.
+  rpc SetCategoryTags(SetCategoryTagsRequest) returns (SetCategoryTagsResponse);
   // Refused while the category has subcategories or splits.
   rpc DeleteCategory(DeleteCategoryRequest) returns (DeleteCategoryResponse);
 }
@@ -24,6 +26,8 @@ message Category {
   optional int64 parent_id = 2;
   string name = 3;
   CategoryKind kind = 4;
+  bool fixed = 5;
+  bool yearly_cost = 6;
 }
 
 message ListCategoriesRequest {}
@@ -36,6 +40,8 @@ message CreateCategoryRequest {
   optional int64 parent_id = 1;
   string name = 2;
   CategoryKind kind = 3;
+  bool fixed = 4;
+  bool yearly_cost = 5;
 }
 
 message CreateCategoryResponse {
@@ -49,6 +55,16 @@ message UpdateCategoryRequest {
 }
 
 message UpdateCategoryResponse {
+  Category category = 1;
+}
+
+message SetCategoryTagsRequest {
+  int64 id = 1;
+  bool fixed = 2;
+  bool yearly_cost = 3;
+}
+
+message SetCategoryTagsResponse {
   Category category = 1;
 }
 

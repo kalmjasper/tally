@@ -44,6 +44,8 @@ export interface Category {
   parentId: number | null;
   name: string;
   kind: CategoryKind;
+  fixed: boolean;
+  yearlyCost: boolean;
 }
 
 export interface Split {
@@ -200,6 +202,8 @@ const toCategory = (c: PbCategory): Category => ({
   parentId: optNum(c.parentId),
   name: c.name,
   kind: c.kind === PbCategoryKind.INCOME ? "income" : "expense",
+  fixed: c.fixed,
+  yearlyCost: c.yearlyCost,
 });
 
 const toTx = (t: PbTransaction): Tx => ({
@@ -272,18 +276,22 @@ export const api = {
     toAccount((await accounts.updateAccount({ id: big(id), name })).account!),
 
   listCategories: async () => (await categories.listCategories({})).categories.map(toCategory),
-  createCategory: async (parentId: number | null, name: string, kind: CategoryKind) =>
+  createCategory: async (parentId: number | null, name: string, kind: CategoryKind, fixed = false, yearlyCost = false) =>
     toCategory(
       (
         await categories.createCategory({
           parentId: optBig(parentId),
           name,
           kind: kind === "income" ? PbCategoryKind.INCOME : PbCategoryKind.EXPENSE,
+          fixed,
+          yearlyCost,
         })
       ).category!,
     ),
   updateCategory: async (id: number, name: string, parentId: number | null) =>
     toCategory((await categories.updateCategory({ id: big(id), name, parentId: optBig(parentId) })).category!),
+  setCategoryTags: async (id: number, fixed: boolean, yearlyCost: boolean) =>
+    toCategory((await categories.setCategoryTags({ id: big(id), fixed, yearlyCost })).category!),
   deleteCategory: async (id: number) => {
     await categories.deleteCategory({ id: big(id) });
   },

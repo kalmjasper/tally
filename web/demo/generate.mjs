@@ -81,6 +81,9 @@ export function demoExports() {
   }
 
   // Bigger moments, some shared with friends who pay their part back by Tikkie
+  sepa(day(0, 28), "Gemeente Rivieren", 18700, "Jaarlijkse gemeentelijke heffing");
+  sepa(day(3, 7), "Domein Atlas", 8900, "Jaarlijkse domeinverlenging");
+  sepa(day(7, 20), "Fietsclub Jaarlidmaatschap", 12500, "Jaarlijkse contributie");
   card.push({ d: day(0, 18), desc: "SKYWAYS AIRLINES     AMSTERDAM", cents: 28900 });
   card.push({ d: day(1, 13), desc: "HOTEL ALPENBLICK     INNSBRUCK", cents: 64000 });
   tikkie(day(1, 16), "L. Jansen", 32000, "Skiweekend");

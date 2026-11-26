@@ -68,7 +68,7 @@ export function YearChart({
         className={`ychart ${hover != null ? "focus" : ""}`}
         viewBox={`0 0 ${W} ${H}`}
         role="img"
-        aria-label={`Spending per month in ${year} ${what}: ${visible.map((s) => s.name).join(", ")}. Every value is in the table below.`}
+        aria-label={`Spending per month in ${year} ${what}: ${visible.map((s) => s.name).join(", ")}.`}
       >
         {ticks.map((v) => (
           <g key={v}>
@@ -91,7 +91,7 @@ export function YearChart({
                     cum += s.data[m];
                     const y1 = y(cum) + (isTop ? 0 : 1);
                     const h = y0 - y1;
-                    if (h < 1) return null; // too thin to draw; the tooltip and table carry it
+                    if (h < 1) return null; // too thin to draw; the tooltip carries it
                     const x = cx - BAR_W / 2;
                     const r = isTop ? Math.min(4, h) : 0;
                     const d = `M${x} ${y0}V${y1 + r}Q${x} ${y1} ${x + r} ${y1}H${x + BAR_W - r}Q${x + BAR_W} ${y1} ${x + BAR_W} ${y1 + r}V${y0}Z`;

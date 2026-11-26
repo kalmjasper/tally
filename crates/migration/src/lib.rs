@@ -10,6 +10,7 @@ mod m20261123_000001_transfer_counter_account;
 mod m20261124_000001_rules;
 mod m20261125_000001_transfer_rules;
 mod m20261126_000001_rule_amounts;
+mod m20261127_000001_category_tags;
 
 pub struct Migrator;
 
@@ -22,6 +23,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20261124_000001_rules::Migration),
             Box::new(m20261125_000001_transfer_rules::Migration),
             Box::new(m20261126_000001_rule_amounts::Migration),
+            Box::new(m20261127_000001_category_tags::Migration),
         ]
     }
 }

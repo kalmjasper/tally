@@ -26,7 +26,7 @@ impl CategoryService for Svc {
             Ok(pb::CategoryKind::Income) => CategoryKind::Income,
             Ok(pb::CategoryKind::Unspecified) | Err(_) => return Err(Status::invalid_argument("kind is required")),
         };
-        let category = self.0.create_category(req.parent_id, &req.name, kind).await.map_err(status)?;
+        let category = self.0.create_category_with_tags(req.parent_id, &req.name, kind, req.fixed, req.yearly_cost).await.map_err(status)?;
         Ok(Response::new(pb::CreateCategoryResponse { category: Some(to_pb(category)) }))
     }
 
@@ -37,6 +37,15 @@ impl CategoryService for Svc {
         let req = req.into_inner();
         let category = self.0.update_category(req.id, &req.name, req.parent_id).await.map_err(status)?;
         Ok(Response::new(pb::UpdateCategoryResponse { category: Some(to_pb(category)) }))
+    }
+
+    async fn set_category_tags(
+        &self,
+        req: Request<pb::SetCategoryTagsRequest>,
+    ) -> Result<Response<pb::SetCategoryTagsResponse>, Status> {
+        let req = req.into_inner();
+        let category = self.0.set_category_tags(req.id, req.fixed, req.yearly_cost).await.map_err(status)?;
+        Ok(Response::new(pb::SetCategoryTagsResponse { category: Some(to_pb(category)) }))
     }
 
     async fn delete_category(
@@ -53,5 +62,5 @@ fn to_pb(c: Category) -> pb::Category {
         CategoryKind::Expense => pb::CategoryKind::Expense,
         CategoryKind::Income => pb::CategoryKind::Income,
     };
-    pb::Category { id: c.id, parent_id: c.parent_id, name: c.name, kind: kind.into() }
+    pb::Category { id: c.id, parent_id: c.parent_id, name: c.name, kind: kind.into(), fixed: c.fixed, yearly_cost: c.yearly_cost }
 }

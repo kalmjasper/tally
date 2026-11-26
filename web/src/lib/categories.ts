@@ -49,6 +49,12 @@ export interface CatInfo {
   color: string;
   /** Chart series color of its top-level category. */
   series: string;
+  fixed: boolean;
+  ownFixed: boolean;
+  fixedByParent: boolean;
+  yearlyCost: boolean;
+  ownYearlyCost: boolean;
+  yearlyCostByParent: boolean;
 }
 
 export interface CatIndex {
@@ -85,6 +91,14 @@ export function indexCategories(list: Category[]): CatIndex {
   };
 
   const tops = list.filter((c) => c.parentId == null || !raw.has(c.parentId));
+  const taggedAbove = (c: Category, tag: "fixed" | "yearlyCost"): boolean => {
+    let cur = c;
+    for (let i = 0; cur.parentId != null && raw.has(cur.parentId) && i < 20; i++) {
+      cur = raw.get(cur.parentId)!;
+      if (cur[tag]) return true;
+    }
+    return false;
+  };
   const expenseTops = tops.filter((c) => c.kind === "expense").sort((a, b) => a.id - b.id);
   const style = new Map<number, { color: string; series: string; icon: IconName | null }>();
   expenseTops.forEach((c, i) =>
@@ -115,6 +129,12 @@ export function indexCategories(list: Category[]): CatIndex {
       letter: c.name.trim().charAt(0).toUpperCase() || "?",
       color: s.color,
       series: s.series,
+      fixed: !!c.fixed || taggedAbove(c, "fixed"),
+      ownFixed: !!c.fixed,
+      fixedByParent: taggedAbove(c, "fixed"),
+      yearlyCost: !!c.yearlyCost || taggedAbove(c, "yearlyCost"),
+      ownYearlyCost: !!c.yearlyCost,
+      yearlyCostByParent: taggedAbove(c, "yearlyCost"),
     });
   }
 

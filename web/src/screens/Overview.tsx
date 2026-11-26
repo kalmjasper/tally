@@ -61,7 +61,7 @@ function MonthView({ month, cats }: { month: string; cats: CatIndex }) {
     return (
       <div className="card">
         <Empty title={`Nothing in ${monthLabel(month)} yet`}>
-          <p>Import an ING or AMEX export to see where your money went.</p>
+          <p>Import an ING, AMEX, ABN AMRO or Revolut statement to see where your money went.</p>
           <div className="actions center">
             <button className="btn primary" onClick={() => open({ kind: "import" })}><Icon name="import" />Import Statement</button>
             {cats.ordered.length === 0 && <button className="btn" onClick={() => open({ kind: "categories" })}><Icon name="tag" />Set Up Categories</button>}

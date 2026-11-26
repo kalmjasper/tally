@@ -64,7 +64,9 @@ savings or investments instead of spent.
 
 <img align="right" width="230" alt="October on a phone, in dark mode" src="docs/screenshots/phone.png">
 
-- **Import** an ING export (English CSV) or a credit-card export (`Datum,Omschrijving,Bedrag`).
+- **Import** an ING export (English CSV), an AMEX export (`Datum,Omschrijving,Bedrag`),
+  an ABN AMRO Excel TXT export (one EUR account per `.TAB` file), or a Revolut English CSV statement
+  containing completed EUR transactions.
   Overlapping exports don't create duplicates, and an import can be undone.
 - **Categorize fast:** pick a category, press Enter, and the next transaction's picker opens.
 - **Select several** transactions (⌘/Ctrl-click, Shift-click) to categorize, link or mark them

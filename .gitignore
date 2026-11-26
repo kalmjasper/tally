@@ -6,7 +6,9 @@ devenv.local.nix
 .pre-commit-config.yaml
 
 # Real bank exports contain IBANs and names. Anonymized fixtures live in crates/sources/tests/fixtures/.
-/*.csv
+/*.[cC][sS][vV]
+/*.[tT][aA][bB]
+/*.[tT][xX][tT]
 
 # Frontend
 /web/node_modules

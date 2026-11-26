@@ -7,7 +7,7 @@ app does.
 
 | Path | What lives there |
 |---|---|
-| `crates/sources` | The CSV parsers: bytes in, normalized transactions out. No database. |
+| `crates/sources` | The statement parsers: bytes in, normalized transactions out. No database. |
 | `crates/core` (`tally-core`) | Every use case. The only crate that queries the database. |
 | `crates/server` (`tally-server`, binary `tally`) | A thin gRPC / gRPC-web layer over `tally-core`; also serves `web/dist`. `src/auth` is passkey sign-in. |
 | `crates/migration` | The schema, as SeaORM migrations. The source of truth for the database. |
@@ -73,7 +73,7 @@ cd web && npm run typecheck && npm test && npm run build
 ## Privacy
 
 The app holds real bank data, but the repo must never contain any.
-- Never commit bank exports, database dumps, or screenshots of real data. Root-level `*.csv` is
+- Never commit bank exports, database dumps, or screenshots of real data. Root-level CSV, TAB and TXT files are
   gitignored for this reason.
 - Test fixtures (`crates/sources/tests/fixtures`) and screenshots use made-up data only. The demo
   (`web/demo`) is the source for screenshots.

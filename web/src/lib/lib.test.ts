@@ -47,6 +47,12 @@ describe("text", () => {
   it("recognises the real export formats", () => {
     expect(detectExport(fixture("ing.csv"))).toEqual({ source: "ing_csv", bank: "ING", rows: 8, from: "2026-11-01", to: "2026-11-19" });
     expect(detectExport(fixture("amex.csv"))).toEqual({ source: "amex_csv", bank: "American Express", rows: 7, from: "2026-10-28", to: "2026-11-19" });
+    expect(detectExport(fixture("abn.tab"))).toEqual({ source: "abn_tab", bank: "ABN AMRO", rows: 2, from: "2026-11-01", to: "2026-11-03", account: "012345678" });
+    expect(detectExport(fixture("abn.tab").replace("EUR", "USD"))).toBeNull();
+    expect(detectExport(fixture("revolut.csv"))).toEqual({ source: "revolut_csv", bank: "Revolut", rows: 6, from: "2026-06-10", to: "2026-10-12" });
+    const revolut = fixture("revolut.csv");
+    expect(detectExport(revolut.replace("TicketKiosk", '"Ticket,\n""Kiosk"""'))).toEqual(detectExport(revolut));
+    expect(detectExport(revolut.replace("State,Balance", "State,BalanceX"))).toBeNull();
     expect(detectExport("Datum;Bedrag\n1;2")).toBeNull();
   });
 

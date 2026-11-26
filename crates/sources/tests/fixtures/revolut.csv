@@ -1,0 +1,7 @@
+Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
+Card Payment,Current,2026-06-09 23:59:01,2026-06-10 11:34:19,TicketKiosk,-13.10,0.00,EUR,COMPLETED,690.75
+Card Payment,Current,2026-06-22 19:14:51,2026-06-23 03:20:59,Streamflix,-46.28,0.00,EUR,COMPLETED,644.47
+Card Payment,Current,2026-06-22 19:15:15,2026-06-23 03:20:59,Streamflix,-24.20,0.00,EUR,COMPLETED,620.27
+Card Payment,Current,2026-08-29 07:49:24,2026-08-29 13:58:41,ParkEasy,-2.88,0.00,EUR,COMPLETED,617.39
+Topup,Current,2026-10-11 12:49:23,2026-10-11 12:49:24,Apple Pay top-up by *1234,300.00,0.00,EUR,COMPLETED,917.39
+Card Payment,Current,2026-10-11 12:51:16,2026-10-12 05:53:54,Skyways,-261.46,0.00,EUR,COMPLETED,655.93

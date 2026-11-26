@@ -64,6 +64,37 @@ async fn fixtures_import_and_the_amex_payment_is_suggested_as_transfer() {
 }
 
 #[tokio::test]
+async fn bank_statement_imports_deduplicate_overlaps_and_can_be_undone() {
+    let l = ledger().await;
+    let statements = [
+        ("abn_tab", include_str!("../../sources/tests/fixtures/abn.tab"), false, 2),
+        ("revolut_csv", include_str!("../../sources/tests/fixtures/revolut.csv"), true, 6),
+    ];
+    for (source, statement, has_header, count) in statements {
+        let account = l.create_account(source).await.unwrap();
+        let mut lines = statement.lines();
+        let mut subset = String::new();
+        if has_header {
+            subset.push_str(lines.next().unwrap());
+            subset.push('\n');
+        }
+        subset.push_str(lines.next().unwrap());
+        let first = l.import_file(account.id, source, None, subset.into_bytes()).await.unwrap();
+        assert_eq!(first.batch.inserted, 1);
+
+        let import = || l.import_file(account.id, source, None, statement.as_bytes().to_vec());
+        let overlap = import().await.unwrap();
+        assert_eq!((overlap.batch.inserted, overlap.batch.duplicates), (count - 1, 1));
+        assert!(import().await.unwrap().already_imported);
+        l.undo_batch(overlap.batch.id).await.unwrap();
+        let filter = TransactionFilter { account_id: Some(account.id), ..Default::default() };
+        let remaining = l.list_transactions(&filter).await.unwrap();
+        assert_eq!(remaining.len(), 1);
+        assert_eq!(remaining[0].import_batch_id, first.batch.id);
+    }
+}
+
+#[tokio::test]
 async fn unknown_source_and_bad_files_are_rejected() {
     let l = ledger().await;
     let account = l.create_account("ING").await.unwrap();

@@ -31,7 +31,7 @@ const transactions = createClient(TransactionService, transport);
 
 export type CategoryKind = "expense" | "income";
 export type LinkKind = "transfer" | "reimbursement";
-export type Source = "ing_csv" | "amex_csv";
+export type Source = "ing_csv" | "amex_csv" | "abn_tab" | "revolut_csv";
 export type RuleDirection = "out" | "in" | null;
 
 export interface Account {

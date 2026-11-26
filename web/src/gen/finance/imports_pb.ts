@@ -71,7 +71,7 @@ export type ImportFileRequest = Message<"finance.ImportFileRequest"> & {
   accountId: bigint;
 
   /**
-   * "ing_csv" or "amex_csv".
+   * "ing_csv", "amex_csv", "abn_tab" or "revolut_csv".
    *
    * @generated from field: string source = 2;
    */

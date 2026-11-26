@@ -363,7 +363,12 @@ table.ytable { border-collapse: collapse; width: 100%; font-size: 12px; font-var
 .drop input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .drop:focus-within { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
 .file { display: flex; align-items: center; gap: 12px; background: var(--fill-2); border-radius: 11px; padding: 10px 12px; }
-.file .badge { width: 34px; height: 34px; border-radius: 9px; background: var(--surface); display: grid; place-items: center; font-weight: 700; font-size: 11px; color: var(--label-2); box-shadow: 0 0 0 .5px var(--sep); flex: none; }
+.import-providers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; width: 100%; max-width: 400px; margin-bottom: 6px; }
+.import-provider { display: grid; justify-items: center; gap: 5px; min-width: 42px; font-size: 11px; color: var(--label-2); }
+.bank-logo { width: 32px; height: 32px; flex: none; object-fit: contain; }
+@media (prefers-color-scheme: dark) {
+  .bank-logo[src$="/revolut.png"] { filter: invert(1); }
+}
 .file .meta, .cand .meta { color: var(--label-2); font-size: 12px; }
 .form-row { display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 10px; }
 .form-row label { color: var(--label-2); font-size: 12.5px; text-align: right; }

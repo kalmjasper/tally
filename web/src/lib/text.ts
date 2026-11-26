@@ -18,6 +18,13 @@ export function txSubtitle(tx: Tx): string {
     const what = / RRN:/.test(d) ? "Cash withdrawal" : / Apple Pay/.test(d) ? "Apple Pay" : "Card payment";
     return time ? `${what} · ${time}` : what;
   }
+  // ABN AMRO card payments: "BEA, Apple Pay Versmarkt 1425,PAS123 NR:CT000001, 02.11.26/15:14 Amsterdam".
+  const card = d.match(/^(BEA|eCom), /);
+  if (card) {
+    const time = d.match(/ \d{2}\.\d{2}\.\d{2}\/(\d{2})[:.](\d{2}) /);
+    const what = / Apple Pay /.test(d) ? "Apple Pay" : card[1] === "eCom" ? "Online card payment" : "Card payment";
+    return time ? `${what} · ${time[1]}:${time[2]}` : what;
+  }
   const rest = d
     .replace(/ ?Value date: \S+$/, "")
     .replace(/^Name: .*? (?=IBAN:)/, "")
@@ -43,32 +50,55 @@ export interface DetectedExport {
   rows: number;
   from: string | null;
   to: string | null;
+  /** The ABN AMRO account number from a TAB export. */
+  account?: string;
 }
 
-/** Recognises an ING or AMEX export from its header row, without parsing the whole file. */
+/** Recognises an ING, AMEX, ABN AMRO or Revolut export from its CSV header or TAB fields. */
 export function detectExport(text: string): DetectedExport | null {
   const lines = text.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim());
   const header = lines[0] ?? "";
+  if (header.includes("\t")) {
+    const rows = lines.map((line) => line.split("\t").map((field) => field.trim()));
+    const account = rows[0][0];
+    if (!/^\d{9}$/.test(account) || rows.some((row) => row.length !== 8 || row[0] !== account || row[1] !== "EUR" || !/^\d{8}$/.test(row[2]))) return null;
+    const dates = rows.map((row) => `${row[2].slice(0, 4)}-${row[2].slice(4, 6)}-${row[2].slice(6)}`).sort();
+    return { source: "abn_tab", bank: "ABN AMRO", rows: rows.length, from: dates[0], to: dates[dates.length - 1], account };
+  }
+  // Dates are in the leading fields. Keep the first line of each CSV record so
+  // a quoted, multiline description counts once and cannot supply a spurious date.
+  let inQuotes = false;
+  const records = lines.slice(1).filter((line) => {
+    const startsRecord = !inQuotes;
+    for (const char of line) {
+      if (char === '"') inQuotes = !inQuotes;
+    }
+    return startsRecord;
+  });
   let dates: string[];
   let source: Source;
   let bank: string;
   if (header.startsWith('"Date","Name / Description"')) {
     source = "ing_csv";
     bank = "ING";
-    dates = lines.slice(1).map((l) => l.slice(1, 9)).filter((s) => /^\d{8}$/.test(s)).map((s) => `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}`);
+    dates = records.map((l) => l.slice(1, 9)).filter((s) => /^\d{8}$/.test(s)).map((s) => `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6)}`);
   } else if (header.startsWith("Datum,Omschrijving,Bedrag")) {
     source = "amex_csv";
     bank = "American Express";
-    dates = lines
-      .slice(1)
+    dates = records
       .map((l) => l.split(",")[0].match(/^(\d{2})\/(\d{2})\/(\d{4})$/))
       .filter((m): m is RegExpMatchArray => !!m)
       .map((m) => `${m[3]}-${m[1]}-${m[2]}`);
+  } else if (header === "Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance") {
+    source = "revolut_csv";
+    bank = "Revolut";
+    // The completed date is the fourth column; the three before it never contain a comma.
+    dates = records.map((l) => l.split(",")[3]?.slice(0, 10) ?? "").filter((s) => /^\d{4}-\d{2}-\d{2}$/.test(s));
   } else {
     return null;
   }
   const sorted = [...dates].sort();
-  return { source, bank, rows: lines.length - 1, from: sorted[0] ?? null, to: sorted[sorted.length - 1] ?? null };
+  return { source, bank, rows: records.length, from: sorted[0] ?? null, to: sorted[sorted.length - 1] ?? null };
 }
 
 /**

@@ -50,19 +50,28 @@ impl Table {
 
 /// Parses a Dutch-formatted amount like `1019,66`, `-12,47` or `12` into cents.
 pub(crate) fn parse_cents(input: &str) -> Result<i64, String> {
-    let bad = || format!("invalid amount {input:?}");
-    let (negative, unsigned) = match input.strip_prefix('-') {
-        Some(rest) => (true, rest),
-        None => (false, input),
-    };
-    let (whole, cents) = unsigned.split_once(',').unwrap_or((unsigned, "00"));
-    let digits = |s: &str| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit());
-    if !digits(whole) || !digits(cents) || cents.len() != 2 {
-        return Err(bad());
+    let (whole, fraction) = input.split_once(',').unwrap_or((input, "00"));
+    cents_from_parts(whole, fraction).ok_or_else(|| format!("invalid amount {input:?}"))
+}
+
+/// Parses a signed amount with a decimal point and exactly two decimal places.
+pub(crate) fn parse_point_cents(input: &str) -> Result<i64, String> {
+    input
+        .split_once('.')
+        .and_then(|(whole, fraction)| cents_from_parts(whole, fraction))
+        .ok_or_else(|| format!("invalid amount {input:?}"))
+}
+
+fn cents_from_parts(whole: &str, fraction: &str) -> Option<i64> {
+    let magnitude = whole.strip_prefix('-').unwrap_or(whole);
+    if !magnitude.bytes().all(|b| b.is_ascii_digit())
+        || fraction.len() != 2
+        || !fraction.bytes().all(|b| b.is_ascii_digit())
+    {
+        return None;
     }
-    let value = whole.parse::<i64>().ok().and_then(|w| w.checked_mul(100)?.checked_add(cents.parse().ok()?));
-    let value = value.ok_or_else(bad)?;
-    Ok(if negative { -value } else { value })
+    let cents = magnitude.parse::<i64>().ok()?.checked_mul(100)?.checked_add(fraction.parse().ok()?)?;
+    Some(if whole.starts_with('-') { -cents } else { cents })
 }
 
 pub(crate) fn parse_date(input: &str, format: &str) -> Result<Date, String> {
@@ -115,6 +124,11 @@ mod tests {
         assert_eq!(parse_cents("12"), Ok(1200));
         for bad in ["", "-", "1.019,66", "12,5", "12,", "abc"] {
             assert!(parse_cents(bad).is_err(), "{bad:?} should be rejected");
+        }
+        assert_eq!(parse_point_cents("000000000001240.47"), Ok(124047));
+        assert_eq!(parse_point_cents("-0.05"), Ok(-5));
+        for bad in ["", "12", "12.5", "12,50", "--12.50", ".50"] {
+            assert!(parse_point_cents(bad).is_err(), "{bad:?} should be rejected");
         }
     }
 }

@@ -4,9 +4,11 @@
 //! `tests/fixtures/`). If a bank changes its format, the [`SourceError::MissingColumn`] error
 //! lists the headers it found; extend the parser then.
 
+pub mod abn_tab;
 pub mod amex_csv;
 pub mod ing_csv;
 mod parse;
+pub mod revolut_csv;
 
 pub use jiff::civil::Date;
 

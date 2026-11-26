@@ -26,6 +26,8 @@ impl Ledger {
         let parse = match source {
             sources::ing_csv::ID => sources::ing_csv::parse,
             sources::amex_csv::ID => sources::amex_csv::parse,
+            sources::abn_tab::ID => sources::abn_tab::parse,
+            sources::revolut_csv::ID => sources::revolut_csv::parse,
             _ => return Err(Error::InvalidArgument(format!("unknown source {source:?}"))),
         };
         let file_sha256 = hex::encode(Sha256::digest(&bytes));

@@ -704,8 +704,8 @@
     <div class="sheets">
       <div class="sheet">
         <h3>Import Statement</h3>
-        <p class="sub">The bank is recognised from the file's header row.</p>
-        <div class="drop"><svg class="i"><use href="#i-doc"/></svg>Drop an ING or AMEX export here</div>
+        <p class="sub">The bank is recognised from the file itself.</p>
+        <div class="drop"><svg class="i"><use href="#i-doc"/></svg>Drop an ING, AMEX, ABN AMRO or Revolut export here</div>
         <div class="file"><span class="badge">CSV</span><div style="min-width:0"><div style="font-weight:600">ING export</div><div class="meta">540 rows · 1 Jan – 21 Nov 2026</div></div>
           <span class="popup">ING Betaalrekening<svg class="i"><use href="#i-updown"/></svg></span></div>
         <div class="stats"><div><b class="pos">27</b><span>new transactions</span></div><div><b>787</b><span>already imported</span></div></div>
@@ -787,7 +787,7 @@
       <div class="nrow hd"><span>What the mockups need</span><span>Status</span><span>Proposal</span></div>
       <div class="nrow"><span>Year mode: categories over time</span><span class="status ok">Supported</span><span><code>CategoryTotals</code> for the year already returns month × category rows; the frontend groups them by top-level category.</span></div>
       <div class="nrow"><span>Everything in A, the sheets, basic C</span><span class="status ok">Supported</span><span>No backend change.</span></div>
-      <div class="nrow"><span>Recognising the bank on import</span><span class="status ok">Frontend</span><span>Read the header row and pick <code>ing_csv</code> or <code>amex_csv</code>.</span></div>
+      <div class="nrow"><span>Recognising the bank on import</span><span class="status ok">Frontend</span><span>Recognise ING, AMEX and Revolut by their CSV headers, and ABN AMRO by its eight TAB fields.</span></div>
       <div class="nrow"><span>Spent · paid back per category</span><span class="status miss">Missing</span><span>Add <code>spent_cents</code> and <code>reimbursed_cents</code> to <code>CategoryTotal</code>, a small change to the report query. Optional for v1.</span></div>
       <div class="nrow"><span>Waiting to be paid back</span><span class="status later">Deferred</span><span>Needs an expected amount per group to know what's still open; that's on the deferred list.</span></div>
       <div class="nrow"><span>Quick picks ranked by past use</span><span class="status later">Deferred</span><span>Start with recent categories. Ranking by counterparty is the first step toward rules.</span></div>
